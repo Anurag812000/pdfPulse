@@ -17,7 +17,6 @@ st.set_page_config(
 
 
 # Sidebar: API Key Inputs
-st.sidebar.header(":blue[Configuration]")
 st.sidebar.title(":green[API Configuration]")
 GEMINI_API = st.sidebar.text_input(
     ":blue[Gemini API Key]",
@@ -60,7 +59,8 @@ if "messages" not in st.session_state:
 
 for message in st.session_state["messages"]:
     with st.chat_message(
-        message["role"], avatar="robot_2" if message["role"] == "ai" else "person"
+        message["role"],
+        avatar=":material/robot_2:" if message["role"] == "ai" else ":material/person:",
     ):
         st.markdown(f"{message['content']}")
 

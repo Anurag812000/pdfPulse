@@ -13,7 +13,7 @@ def initialize_pinecone(api_key, index_name, dimension=768):
         metric="cosine",
         spec=ServerlessSpec(cloud="aws", region="us-east-1"),
     )
-
+    print("indexing...")
     return pinecone.Index(index_name)
 
 
@@ -26,4 +26,5 @@ def query_pinecone(index, query_embedding, top_k):
     search_results = index.query(
         vector=query_embedding, top_k=top_k, include_metadata=True
     )
+    print("querying...")
     return [result["metadata"]["text"] for result in search_results["matches"]]

@@ -3,6 +3,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 def extract_text_from_pdf(uploaded_file):
+    print("extracting text from pdf...")
     reader = PyPDF2.PdfReader(uploaded_file)
     text = ""
     for page in reader.pages:
