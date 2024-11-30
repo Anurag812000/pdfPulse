@@ -83,7 +83,7 @@ if query := st.chat_input("Ask a question..."):
 # Footer
 st.sidebar.markdown(
     """
-    [![GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/your-repo)
+    [![GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/leeh-nix/PDF-Chatbot)
     """,
     unsafe_allow_html=True,
 )
