@@ -1,11 +1,13 @@
 import streamlit as st
-from backend.extract import extract_text_from_pdf, split_text
-from backend.pinecone import initialize_pinecone, store_in_pinecone, query_pinecone
-from backend.generate_response import (
-    initialize_gemini,
-    generate_embeddings,
-    generate_response,
-)
+from backend import *
+
+# from backend import extract_text_from_pdf, split_text
+# from backend import initialize_pinecone, store_in_pinecone, query_pinecone
+# from backend import (
+#     initialize_gemini,
+#     generate_embeddings,
+#     generate_response,
+# )
 
 
 # Page Configuration
@@ -41,6 +43,7 @@ else:
 uploaded_file = st.file_uploader(
     "Upload your PDF file", type=["pdf"], help="Upload a PDF document for processing."
 )
+st.markdown(":gray[_Larger files may take longer to process._]")
 if uploaded_file:
     with st.spinner("Processing the file..."):
         text = extract_text_from_pdf(uploaded_file)
