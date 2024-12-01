@@ -1,14 +1,14 @@
 import streamlit as st
-from backend import *
+from backend.extract import extract_text_from_pdf, split_text
+from backend.pinecone import initialize_pinecone, store_in_pinecone, query_pinecone
+from backend.generate_response import (
+    initialize_gemini,
+    generate_embeddings,
+    generate_response,
+)
+from pinecone.core.openapi.shared.exceptions import UnauthorizedException
 
-# from backend import extract_text_from_pdf, split_text
-# from backend import initialize_pinecone, store_in_pinecone, query_pinecone
-# from backend import (
-#     initialize_gemini,
-#     generate_embeddings,
-#     generate_response,
-# )
-
+from log import logger
 
 # Page Configuration
 st.set_page_config(
@@ -28,16 +28,20 @@ GEMINI_API = st.sidebar.text_input(
 PINECONE_API = st.sidebar.text_input(
     ":violet[Pinecone API Key]", type="password", help="Enter your Pinecone API key."
 )
-st.sidebar.markdown(":red[_Your API Keys are used locally and is NOT saved._]")
 
 if GEMINI_API and PINECONE_API:
-    initialize_gemini(GEMINI_API)
-    index_name = "rag-qa-index"
-    index = initialize_pinecone(PINECONE_API, index_name)
-    st.sidebar.success("API keys configured successfully!")
+    try:
+        initialize_gemini(GEMINI_API)
+        index_name = "rag-qa-index"
+        index = initialize_pinecone(PINECONE_API, index_name)
+        st.sidebar.success("API keys configured successfully!")
+    except UnauthorizedException as e:
+        st.sidebar.error(f"{e.body}")
+        logger.info(e.body)
 else:
     st.sidebar.warning("Please enter your API keys.")
 
+st.sidebar.markdown(":red[_Your API Keys are used locally and is NOT saved._]")
 
 # File Uploader
 uploaded_file = st.file_uploader(
@@ -63,7 +67,11 @@ if "messages" not in st.session_state:
 for message in st.session_state["messages"]:
     with st.chat_message(
         message["role"],
-        avatar=":material/robot_2:" if message["role"] == "ai" else ":material/person:",
+        avatar=(
+            ":material/robot_2:"
+            if message["role"] == "ai" or "assistant"
+            else ":material/person:"
+        ),
     ):
         st.markdown(f"{message['content']}")
 
