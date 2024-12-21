@@ -1,3 +1,4 @@
+import streamlit as st
 from pinecone import Pinecone, ServerlessSpec
 from backend.generate_response import generate_embeddings
 from log import logger
@@ -6,21 +7,18 @@ from log import logger
 # @st.cache_data
 def query_pinecone(_index, query_embedding, top_k):
     logger.info("querying...")
-    logger.warning(f"\n\nINDEX: {_index}\n\n")
     search_results = _index.query(
         vector=query_embedding, top_k=top_k, include_metadata=True
     )
-    for result in search_results["matches"]:
-        logger.info(
-            f"RESULTS: {round(result['score'], 2)}: {result['metadata']['text']}\n"
-        )
-
+    # log top k matched documents
+    # for result in search_results["matches"]:
+    #     logger.info(
+    #         f"RESULTS: {round(result['score'], 2)}: {result['metadata']['text']}\n"
+    #     )
     return [result["metadata"]["text"] for result in search_results["matches"]]
 
 
-def initialize_pinecone(api_key, index_name):
-    from pinecone import Pinecone, ServerlessSpec
-
+def initialize_pinecone(api_key):
     if not api_key:
         raise ValueError("Pinecone API key is required")
 
@@ -28,12 +26,23 @@ def initialize_pinecone(api_key, index_name):
         # Initialize Pinecone client
         pc = Pinecone(api_key=api_key)
 
+        existing_indexes = pc.list_indexes()
+        # print(existing_indexes)
+        return [existing_indexes[i].name for i in range(len(existing_indexes))]
+
+    except Exception as e:
+        logger.error(f"Error initializing Pinecone: {e}")
+        raise
+
+
+def setup_index(api_key, index_name):
+    print(index_name)
+    try:
+        pc = Pinecone(api_key=api_key)
+
         test_embedding = generate_embeddings(["test content"])[0]
         dimension = len(test_embedding)
 
-        logger.info(f"Detected embedding dimension: {dimension}")
-
-        # Check if index exists
         existing_indexes = pc.list_indexes()
 
         # Create index only if it doesn't exist
@@ -46,13 +55,11 @@ def initialize_pinecone(api_key, index_name):
                 spec=ServerlessSpec(cloud="aws", region="us-east-1"),
             )
         else:
-            logger.info(f"Index {index_name} already exists")
-
+            logger.info(f"Index {index_name} already exists. Skipping creation.")
         return pc.Index(index_name)
-
     except Exception as e:
-        logger.error(f"Error initializing Pinecone: {e}")
-        raise
+        logger.error(f"Error creating Pinecone index: {e}")
+        # st.error(f"Error creating Pinecone index. Please try again.")
 
 
 def store_in_pinecone(_index, chunks, embeddings):

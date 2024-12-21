@@ -1,7 +1,8 @@
 import google.generativeai as genai
 from log import logger
+import streamlit as st
 
-
+@st.cache_data
 def initialize_gemini(api_key):
     genai.configure(api_key=api_key)
 
@@ -25,7 +26,6 @@ def generate_embeddings(content_list, model="models/embedding-001"):
 def generate_response(query, context, model_name="gemini-1.5-flash"):
     model = genai.GenerativeModel(model_name)
     prompt = f"Role: Use the provided context to answer the question. Stick to the points given in the context but summarize appropriately. \n\nContext: {context}\n\nQuestion: {query}\n\nAnswer:"
-    logger.info("generating response...")
-    logger.info(f"CONTEXT: {context}\n\n\nQUERY:{query}")
+    logger.info(f"generating response...\nCONTEXT: {context}\n\n\nQUERY:{query}")
     response = model.generate_content(prompt)
     return response.text

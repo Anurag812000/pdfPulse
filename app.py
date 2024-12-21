@@ -1,6 +1,11 @@
 import streamlit as st
 from backend.extract import extract_text_from_pdf, split_text
-from backend.pinecone import initialize_pinecone, store_in_pinecone, query_pinecone
+from backend.pinecone import (
+    initialize_pinecone,
+    setup_index,
+    store_in_pinecone,
+    query_pinecone,
+)
 from backend.generate_response import (
     initialize_gemini,
     generate_embeddings,
@@ -28,28 +33,58 @@ PINECONE_API = st.sidebar.text_input(
     ":violet[Pinecone API Key]", type="password", help="Enter your Pinecone API key."
 )
 
-if "index" not in st.session_state:
-    st.session_state.index = None
+st.session_state.index = ""
+# if "INDEX_NAME" not in st.session_state:
+#     st.session_state.INDEX_NAME = INDEX_NAME
 
+# if not INDEX_NAME:
+#     st.sidebar.error("Please enter a valid index name.")
+global queryable
+
+# TODO - Fetch index names using the api key and display as a dropdown menu to select the index from.
 if GEMINI_API and PINECONE_API:
     try:
         initialize_gemini(GEMINI_API)
-        index_name = "rag-qa-index"
 
         # Initialize Pinecone index
-        st.session_state.index = initialize_pinecone(PINECONE_API, index_name)
+        index_options = initialize_pinecone(PINECONE_API)
+        INDEX_NAME = st.sidebar.selectbox(
+            "Select an Index", index_options + ["Create new index"]
+        )
+        if INDEX_NAME == "Create new index":
+            INDEX_NAME = st.sidebar.text_input(
+                "Pinecone Index",
+                max_chars=45,
+                help="Name must consist of lower case alphanumeric characters or '-'. _Defaults to pdf-pulse_",
+            )
+            if not INDEX_NAME or 1 > len(INDEX_NAME) > 45:
+                st.error("Please enter a valid index name.")
+        try:
+            st.session_state.index = setup_index(PINECONE_API, INDEX_NAME)
+            queryable = True
+        except Exception as e:
+            queryable = False
+            st.error(f"{e}")
         st.sidebar.success("API keys configured successfully!")
-    except UnauthorizedException as e:
-        st.sidebar.error(f"{e.body}")
-        logger.info(e.body)
+    # except (UnauthorizedException or PineconeApiValueError) as e:
+    except Exception as e:
+        queryable = False
+        # st.sidebar.error("Please enter valid API keys.")
+        # st.sidebar.error(f"{e}")
+        # logger.info(e.body)
 else:
-    st.sidebar.warning("Please enter your API keys.")
+    queryable = False
+    st.sidebar.warning("Please configure your API keys and index name.")
 
 st.sidebar.markdown(":red[_Your API Keys are used locally and is NOT saved._]")
 
+st.header("Chat with the RAG QA System")
+
 uploaded_file = st.file_uploader("Upload a file (PDF only)", type=["pdf"])
 
+
 # Initialize session state variables
+
 if "uploaded" not in st.session_state:
     st.session_state.uploaded = False
 
@@ -101,28 +136,38 @@ if st.session_state.file_processed and not st.session_state.chunks_stored:
 
 
 # Chat
-st.header("Chat with the RAG QA System")
 chat_history = st.container()
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
+# TODO - change the orange accent color!!
 
+# TODO - provide previous messages too as context to the ai
+# TODO - free api has around 1500 word limit for pdf, how to solve it?
+# TODO - option to input index name (for deletion as well)
+
+# TODO - user can input api and start asking quesitons
 # Query input
-if query := st.chat_input("Ask a question..."):
-    st.session_state["messages"].append({"role": "user", "content": query})
-    with st.spinner("Generating response..."):
-        query_embedding = generate_embeddings([query])[0]
-        relevant_chunks = query_pinecone(st.session_state.index, query_embedding, top_k=5)  # type: ignore
-        context = "\n".join(relevant_chunks)
-        ai_response = generate_response(query, context)
-    st.session_state["messages"].append({"role": "assistant", "content": ai_response})
+if queryable:  # type: ignore
+    st.subheader(f"Index: {INDEX_NAME}")  # type:ignore
+    if query := st.chat_input("Ask a question..."):
+        st.session_state["messages"].append({"role": "user", "content": query})
+        with st.spinner("Generating response..."):
+            query_embedding = generate_embeddings([query])[0]
+            relevant_chunks = query_pinecone(st.session_state.index, query_embedding, top_k=5)  # type: ignore
+            context = "\n".join(relevant_chunks)
+            ai_response = generate_response(query, context)
+        st.session_state["messages"].append(
+            {"role": "assistant", "content": ai_response}
+        )
 
-    # Refresh chat display
-    for message in st.session_state["messages"]:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
+        # Refresh chat display
+        for message in st.session_state["messages"]:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+else:  # if api keys not entered
+    st.error("Please configure API keys correctly.")
 # Footer
 st.sidebar.markdown(
     """
