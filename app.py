@@ -11,34 +11,36 @@ from backend.generate_response import (
     generate_embeddings,
     generate_response,
 )
-from pinecone.core.openapi.shared.exceptions import UnauthorizedException
 
 from log import logger
 
 # Page Configuration
 st.set_page_config(
-    page_title="Question Answering System",
+    page_title="pdfPulse",
     layout="centered",
     page_icon="😈",
 )
 
 # Sidebar: API Key Inputs
-st.sidebar.title(":green[API Configuration]")
-GEMINI_API = st.sidebar.text_input(
-    ":blue[Gemini API Key]",
-    type="password",
-    help="Enter your Gemini API key.",
+st.sidebar.subheader(":green[API Configuration]")
+GEMINI_API = (
+    st.sidebar.text_input(
+        ":blue[Gemini API Key]",
+        type="password",
+        help="Enter your Gemini API key.",
+    )
+    or st.secrets["GEMINI_API_KEY"]
 )
-PINECONE_API = st.sidebar.text_input(
-    ":violet[Pinecone API Key]", type="password", help="Enter your Pinecone API key."
+PINECONE_API = (
+    st.sidebar.text_input(
+        ":violet[Pinecone API Key]",
+        type="password",
+        help="Enter your Pinecone API key.",
+    )
+    or st.secrets["PINECONE_API"]
 )
 
 st.session_state.index = ""
-# if "INDEX_NAME" not in st.session_state:
-#     st.session_state.INDEX_NAME = INDEX_NAME
-
-# if not INDEX_NAME:
-#     st.sidebar.error("Please enter a valid index name.")
 global queryable
 
 # TODO - Fetch index names using the api key and display as a dropdown menu to select the index from.
@@ -69,16 +71,13 @@ if GEMINI_API and PINECONE_API:
     # except (UnauthorizedException or PineconeApiValueError) as e:
     except Exception as e:
         queryable = False
-        # st.sidebar.error("Please enter valid API keys.")
-        # st.sidebar.error(f"{e}")
-        # logger.info(e.body)
 else:
     queryable = False
     st.sidebar.warning("Please configure your API keys and index name.")
 
 st.sidebar.markdown(":red[_Your API Keys are used locally and is NOT saved._]")
 
-st.header("Chat with the RAG QA System")
+st.header("pdfPulse")
 
 uploaded_file = st.file_uploader("Upload a file (PDF only)", type=["pdf"])
 
