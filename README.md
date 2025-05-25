@@ -19,6 +19,10 @@ RAG PDF Chatbot is an advanced document analysis application that enables users 
 - PyPDF2
 - Python 3.8+
 
+## Preview
+
+![.](images/pdfPulse%20Preview.jpg)
+
 ## Prerequisites
 
 - Python 3.8 or higher
