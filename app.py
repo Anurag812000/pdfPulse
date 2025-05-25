@@ -140,13 +140,12 @@ chat_history = st.container()
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
-# TODO - change the orange accent color!!
 
 # TODO - provide previous messages too as context to the ai
 # TODO - free api has around 1500 word limit for pdf, how to solve it?
 # TODO - option to input index name (for deletion as well)
 
-# TODO - user can input api and start asking quesitons
+
 # Query input
 if queryable:  # type: ignore
     st.subheader(f"Index: {INDEX_NAME}")  # type:ignore
